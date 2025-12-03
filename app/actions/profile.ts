@@ -51,6 +51,7 @@ export async function updateProfile(data: unknown) {
     data: {
       name: validated.name,
       bio: validated.bio,
+      image: validated.image ?? undefined,
       skills: validated.skills,
       tools: validated.tools,
     },
@@ -152,6 +153,31 @@ export async function deletePortfolioItem(data: unknown) {
 
   revalidatePath("/profile")
   return { success: true }
+}
+
+/**
+ * Get a user's public profile by ID
+ */
+export async function getPublicProfile(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      portfolioItems: {
+        orderBy: { order: "asc" },
+      },
+      _count: {
+        select: {
+          posts: true,
+        },
+      },
+    },
+  })
+
+  if (!user) {
+    throw new Error("User not found")
+  }
+
+  return user
 }
 
 

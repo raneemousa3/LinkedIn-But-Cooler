@@ -54,13 +54,20 @@ export function PortfolioGrid({ items, onDelete }: PortfolioGridProps) {
               />
             </div>
             <div className="p-4">
-              {item.title && (
-                <h4 className="font-medium mb-1">{item.title}</h4>
-              )}
               {item.description && (
-                <p className="text-sm text-muted-foreground line-clamp-2">
+                <p className="text-sm text-foreground mb-2 line-clamp-2">
                   {item.description}
                 </p>
+              )}
+              {item.title && (
+                <a
+                  href={item.title}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  View Project →
+                </a>
               )}
             </div>
             <button

@@ -3,7 +3,6 @@
 import { useState } from "react"
 import Image from "next/image"
 import { deletePost } from "@/app/actions/post"
-import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import type { Post, User } from "@prisma/client"
 
@@ -18,7 +17,6 @@ interface FeedPostsProps {
 export function FeedPosts({ initialPosts }: FeedPostsProps) {
   const [posts, setPosts] = useState(initialPosts)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const router = useRouter()
   const { data: session } = useSession()
 
   const handleDelete = async (id: string) => {
@@ -30,7 +28,6 @@ export function FeedPosts({ initialPosts }: FeedPostsProps) {
     try {
       await deletePost({ id })
       setPosts(posts.filter((post) => post.id !== id))
-      router.refresh()
     } catch (err) {
       console.error("Failed to delete:", err)
     } finally {

@@ -1,4 +1,5 @@
 import { Navbar } from "@/components/features/navbar"
+import { BottomNav } from "@/components/features/bottom-nav"
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 
@@ -16,7 +17,8 @@ export default async function MainLayout({
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto py-8">{children}</main>
+      <main className="pb-20">{children}</main>
+      <BottomNav />
     </div>
   )
 }

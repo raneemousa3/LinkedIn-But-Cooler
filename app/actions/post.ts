@@ -12,7 +12,7 @@ import { revalidatePath } from "next/cache"
 /**
  * Get all posts for the feed (ordered by newest first)
  */
-export async function getPosts(limit: number = 20) {
+export async function getPosts(limit: number = 100) {
   const posts = await prisma.post.findMany({
     take: limit,
     orderBy: { createdAt: "desc" },
@@ -48,6 +48,28 @@ export async function getPost(id: string) {
   })
 
   return post
+}
+
+/**
+ * Get posts by a specific user ID
+ */
+export async function getPostsByUser(userId: string, limit: number = 50) {
+  const posts = await prisma.post.findMany({
+    where: { authorId: userId },
+    take: limit,
+    orderBy: { createdAt: "desc" },
+    include: {
+      author: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+        },
+      },
+    },
+  })
+
+  return posts
 }
 
 /**

@@ -1,13 +1,17 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { createPostSchema } from "@/lib/validations/post"
 import { createPost } from "@/app/actions/post"
-import { useRouter } from "next/navigation"
 
-export function CreatePostForm() {
+interface CreatePostFormProps {
+  onSuccess?: () => void
+}
+
+export function CreatePostForm({ onSuccess }: CreatePostFormProps) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -32,6 +36,8 @@ export function CreatePostForm() {
       try {
         await createPost(data)
         reset()
+        onSuccess?.()
+        // Refresh the router to show new post
         router.refresh()
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to create post")
@@ -40,8 +46,7 @@ export function CreatePostForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="rounded-lg border p-6 space-y-4">
-      <h2 className="text-xl font-semibold">Create Post</h2>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
 
       {error && (
         <div className="rounded-md bg-destructive/15 text-destructive px-4 py-2 text-sm">

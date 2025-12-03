@@ -4,6 +4,7 @@ import { z } from "zod"
 export const profileUpdateSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100).optional(),
   bio: z.string().max(500, "Bio must be less than 500 characters").optional().nullable(),
+  image: z.string().url("Must be a valid URL").optional().nullable(),
   skills: z.array(z.string().min(1)).max(20, "Maximum 20 skills allowed").optional(),
   tools: z.array(z.string().min(1)).max(20, "Maximum 20 tools allowed").optional(),
 })
@@ -11,8 +12,28 @@ export const profileUpdateSchema = z.object({
 // Portfolio item schema
 export const portfolioItemSchema = z.object({
   imageUrl: z.string().url("Must be a valid URL"),
-  title: z.string().max(100, "Title must be less than 100 characters").optional().nullable(),
-  description: z.string().max(500, "Description must be less than 500 characters").optional().nullable(),
+  title: z
+    .string()
+    .max(500, "Link must be less than 500 characters")
+    .optional()
+    .nullable()
+    .or(z.literal(""))
+    .refine(
+      (val) => {
+        // Allow empty string, null, undefined, or valid URL
+        if (!val || val === "") return true
+        try {
+          new URL(val)
+          return true
+        } catch {
+          return false
+        }
+      },
+      {
+        message: "Link must be a valid URL",
+      }
+    ),
+  description: z.string().max(500, "Caption must be less than 500 characters").optional().nullable(),
   order: z.number().int().min(0).optional(),
 })
 

@@ -1,26 +1,56 @@
-import { getProfile } from "@/app/actions/profile"
-import { ProfileEditForm } from "@/components/features/profile-edit-form"
+import { getProfile, getPublicProfile } from "@/app/actions/profile"
+import { getPostsByUser } from "@/app/actions/post"
+import { getMoodBoards } from "@/app/actions/moodboard"
+import { getUserServices } from "@/app/actions/service"
+import { PublicProfile } from "@/components/features/public-profile"
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 
-export default async function ProfilePage() {
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: { userId?: string; tab?: string }
+}) {
   const session = await auth()
+  
+  // If userId is provided, show that user's profile (public view)
+  if (searchParams.userId) {
+    try {
+      const profile = await getPublicProfile(searchParams.userId)
+      const posts = await getPostsByUser(searchParams.userId)
+      const services = await getUserServices(searchParams.userId)
+      return (
+        <PublicProfile
+          profile={profile}
+          posts={posts}
+          services={services}
+          isOwnProfile={session?.user?.id === searchParams.userId}
+          initialTab={searchParams.tab || "profile"}
+        />
+      )
+    } catch (error) {
+      redirect("/profile")
+    }
+  }
+
+  // Otherwise, show current user's own profile
   if (!session?.user?.id) {
     redirect("/login")
   }
 
   const profile = await getProfile()
+  const posts = await getPostsByUser(session.user.id)
+  const moodBoards = await getMoodBoards()
+  const services = await getUserServices(session.user.id)
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Edit Profile</h1>
-        <p className="text-muted-foreground">
-          Update your profile information and portfolio
-        </p>
-      </div>
-
-      <ProfileEditForm initialData={profile} />
-    </div>
+    <PublicProfile
+      profile={profile}
+      posts={posts}
+      moodBoards={moodBoards}
+      services={services}
+      isOwnProfile={true}
+      initialTab={searchParams.tab || "profile"}
+    />
   )
 }

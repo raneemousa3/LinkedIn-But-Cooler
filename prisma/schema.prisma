@@ -63,6 +63,19 @@ model User {
   sessions      Session[]
   portfolioItems PortfolioItem[]
   posts         Post[]
+  jobs          Job[]
+  events        Event[]
+  followers     Follow[] @relation("Followers")
+  following     Follow[] @relation("Following")
+  conversationsAsUser1 Conversation[] @relation("User1Conversations")
+  conversationsAsUser2 Conversation[] @relation("User2Conversations")
+  messages      Message[]
+  likes         Like[]
+  comments      Comment[]
+  bookmarks     Bookmark[]
+  moodBoards    MoodBoard[] @relation("MoodBoardOwner")
+  notifications Notification[] @relation("NotificationRecipient")
+  sentNotifications Notification[] @relation("NotificationSender")
 }
 
 // Portfolio items for the portfolio grid
@@ -87,10 +100,196 @@ model Post {
   imageUrl  String?  // URL to the post image (optional for text-only posts)
   authorId  String
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes     Like[]
+  comments  Comment[]
+  bookmarks Bookmark[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([authorId])
+  @@index([createdAt])
+}
+
+// Job listings for freelance gigs and opportunities
+model Job {
+  id            String   @id @default(cuid())
+  title         String
+  description   String   @db.Text
+  company       String?  // Company name or "Freelance"
+  location      String?  // Location or "Remote"
+  type          String   // e.g., "Full-time", "Part-time", "Freelance", "Contract"
+  compensation  String?  // Salary range or rate
+  applicationUrl String? // URL to apply or contact info
+  postedById    String
+  postedBy      User     @relation(fields: [postedById], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([postedById])
+  @@index([createdAt])
+}
+
+// Follow relationships
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+// Creative events
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  imageUrl    String?  // Event image/cover
+  location    String   // Event location/venue
+  address     String?  // Full address
+  latitude    Float?   // For map positioning
+  longitude   Float?   // For map positioning
+  startDate   DateTime
+  endDate     DateTime?
+  category    String?  // e.g., "Art Show", "Workshop", "Concert", "Networking"
+  organizerId String
+  organizer   User     @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([organizerId])
+  @@index([startDate])
+  @@index([location])
+}
+
+// Conversations between two users
+model Conversation {
+  id        String   @id @default(cuid())
+  user1Id   String
+  user2Id   String
+  user1     User     @relation("User1Conversations", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2     User     @relation("User2Conversations", fields: [user2Id], references: [id], onDelete: Cascade)
+  messages  Message[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([user1Id, user2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+  @@index([updatedAt])
+}
+
+// Individual messages within a conversation
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content        String       @db.Text
+  read           Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+// Likes on posts
+model Like {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+}
+
+// Comments on posts
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// Bookmarks/saved posts
+model Bookmark {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+}
+
+// Mood boards / Collections for saved library
+model MoodBoard {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  isPublic    Boolean  @default(false)
+  ownerId     String
+  owner       User     @relation("MoodBoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  items       MoodBoardItem[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([createdAt])
+}
+
+// Items in a mood board (can be posts or portfolio items)
+model MoodBoardItem {
+  id            String    @id @default(cuid())
+  moodBoardId   String
+  moodBoard     MoodBoard @relation(fields: [moodBoardId], references: [id], onDelete: Cascade)
+  postId        String?   // Optional reference to a post
+  portfolioItemId String? // Optional reference to a portfolio item
+  imageUrl      String?   // Direct image URL if not from post/portfolio
+  order         Int       @default(0)
+  createdAt     DateTime  @default(now())
+
+  @@index([moodBoardId])
+}
+
+// Notifications
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   // "like", "comment", "follow", "connect", "insight"
+  recipientId String
+  recipient User     @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  senderId  String?
+  sender    User?    @relation("NotificationSender", fields: [senderId], references: [id], onDelete: Cascade)
+  postId    String?  // Reference to post if notification is about a post
+  read      Boolean  @default(false)
+  metadata  String?  @db.Text // JSON string for additional data (e.g., insight metrics)
+  createdAt DateTime @default(now())
+
+  @@index([recipientId])
+  @@index([read])
   @@index([createdAt])
 }
 
